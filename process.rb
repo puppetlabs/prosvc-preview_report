@@ -93,6 +93,7 @@ mab.html do
           preview_log.each do |issue|
             li do
               # Work around the fact overview doesn't have human readable messages
+              # we store them here and then use them in the breakdown below
               error_message[issue['issue_code']] = issue['message']
               a "#{issue['file']}:#{issue['line']}", :href => "#%s" % issue['file'].gsub(/[\/\.]/,'_')
             end
@@ -102,8 +103,8 @@ mab.html do
     end
     total_failures = stats['failures']['total'] || 0
 
+    # FAILURES
     unless total_failures == 0 
-      # FAILURES
       h1 "Catalog Compliation Failures"
       div.failure_overview! {
         # 0 out X summary
@@ -171,6 +172,7 @@ mab.html do
           end
         end
       end
+      # CHANGES
       if overview['changes']
         h1 "Resources with changes or conflicts"
         overview['changes']['resource_type_changes'].each do |type,details|
