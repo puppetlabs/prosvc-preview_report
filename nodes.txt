@@ -1,0 +1,2 @@
+pe-384-master.puppetdebug.vlan
+pe-384-agent.puppetdebug.vlan
