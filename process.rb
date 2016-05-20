@@ -8,6 +8,15 @@ def load_json(filename)
   JSON.parse( IO.read(filename) )
 end
 
+
+def find_diffs(diff_path)
+  found_diffs = []
+  Dir.glob("#{diff_path}/*/catalog_diff.json") do |catalog_diff|
+    found_diffs << catalog_diff
+  end
+  found_diffs
+end
+
 overview = load_json('overview.json')
 stats   = overview['stats']
 preview = overview['preview']
@@ -68,7 +77,7 @@ mab.html do
       h5 "#{nodes.length} nodes with this issue"
       nodes[0..10].each do |node|
           li do
-            a node, :href => "ssh://root@#{node}"
+            a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
           end
       end
     end
@@ -120,7 +129,7 @@ mab.html do
         next unless preview['compilation_errors']
         preview['compilation_errors'].each do |error|
           ul do
-            li "#{error['nodes'].length} nodes failed to compile: #{error['manifest']}"
+            li "#{error['nodes'].size} nodes failed to compile: #{error['manifest']}"
             ul do
               div.entry do
 
@@ -172,6 +181,56 @@ mab.html do
           end
         end
       end
+      # NODES
+      h1 "Node breakdown"
+      ul do
+        find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
+          catalog_diff = load_json(catalog_diff_file)
+          li do
+            a catalog_diff['node_name'], :name => catalog_diff['node_name'].gsub(/[-\/\.]/,'_')
+          end
+          ul do
+            table do
+            td do
+                div :style=>"width: #{catalog_diff['baseline_resource_count']}px;" <<
+                   "background-color:black;" do
+                  "&nbsp;"
+                  end
+                div :style=>"width: #{catalog_diff['preview_resource_count']}px;" <<
+                   "background-color:cyan;" do
+                  "&nbsp;"
+                end
+                div :style=>"width: #{catalog_diff['missing_resource_count']}px;" <<
+                   "background-color:red;" do
+                  "&nbsp;"
+                end
+                if catalog_diff['added_resources_count']
+                  div :style=>"width: #{catalog_diff['added_resources_count']}px;" <<
+                     "background-color:green;" do
+                    "#{catalog_diff['added_resources_count']}&nbsp;"
+                  end
+                end
+                div :style=>"width: #{catalog_diff['conflicting_resource_count']}px;" <<
+                   "background-color:blue;" do
+                  "&nbsp;"
+                end
+              end
+            end
+            table do
+              catalog_diff.each do |key,value|
+                next if ['missing_resources','conflicting_resources','missing_edges'].include?(key)
+                next if value.nil?
+                if value.kind_of?(Array) then next if value.empty? end
+                next if value == 0
+                table  do
+                  th "#{key.capitalize.gsub(/_/,' ')}:"
+                  td value
+                end
+              end
+            end
+          end
+        end
+      end
       # CHANGES
       if overview['changes']
         h1 "Resources with changes or conflicts"
@@ -195,8 +254,7 @@ mab.html do
                       unless path == UNKNOWN_FILE_PATH
                          file_path,line_number = path.split(':')
                          h5.entryTitle "#{header.capitalize} resource from line #{line_number}"
-                         body path
-                         div
+                         p path
                          read_code_off_disk(header,file_path,line_number)
                          br
                         end
