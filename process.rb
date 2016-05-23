@@ -61,9 +61,17 @@ mab.html do
       ((line_number - 1)..(line_number + 1)).each do |nu|
         div.entryContent do
           if nu == line_number - 1
-            "#{tag! :b, nu}:#{tag! :b, file[(nu - 1)]}"
+            div :style=> "background-color:rgb(248,238,199)" do
+              tag! :font, :color => 'black' do
+              "#{tag! :b, nu}:#{file[(nu - 1)]}"
+              end
+            end
            else
-            "#{nu}:#{file[(nu - 1)]}"
+            div :style=> "background-color:#f5f5f5" do
+              tag! :font, :color => 'black' do
+              "#{nu}:#{file[(nu - 1)]}"
+              end
+            end
            end
         end
       end
@@ -86,11 +94,14 @@ mab.html do
   end
 
   def process_breakdown(header,type,detail)
-    h3 "Found #{header} #{type} resources"
+    h3 "Detected #{header} #{type} resources"
     detail.each do |title,breakdown|
       ul do
         li do
-          "#{tag! :b, type}[#{title}]"
+          # LINK 01
+          a :name => "#{header.downcase}_#{type}_#{title}".gsub(/[:\/\.]/,'_') do
+            "#{type}[#{title}] is #{header}"
+          end
         end
         breakdown.each do |path,nodes|
         #### Example nodes
@@ -120,6 +131,7 @@ mab.html do
     error_message = Hash.new
     # TOP TEN
     h1 "Top 10 nodes with issues"
+    hr
     body "The following nodes had the most issues including missing or conflicting catalogs."
     br
     body "These nodes are likely the best for testing the breakdown issue list below."
@@ -180,8 +192,9 @@ mab.html do
     end
     # CONFLICTS
     if stats['conflicting'] 
-      total_conflicts = stats['conflicting']['total'] || 0
       h1 "Catalog Compliation Known Issues"
+      hr
+      total_conflicts = stats['conflicting']['total'] || 0
       div.conflict_overview! {
         # 0 out X summary
         <<-eos
@@ -214,7 +227,8 @@ mab.html do
       end
       # CHANGES
       if overview['changes']
-        h1 "Resources with changes or conflicts"
+        h1 "Resource Breakdown"
+        hr
         overview['changes']['resource_type_changes'].each do |type,details|
           ul do
             # Type i.e. Class,File 
@@ -244,8 +258,8 @@ mab.html do
             table do
               td do
                   graph = {
-                    catalog_diff['baseline_resource_count']      => 'black',
-                    catalog_diff['preview_resource_count']       => 'cyan',
+                    catalog_diff['baseline_resource_count']      => 'grey',
+                    catalog_diff['preview_resource_count']       => 'black',
                     catalog_diff['missing_resource_count']       => 'red',
                     catalog_diff['added_resources_count']        => 'green',
                     catalog_diff['conflicting_resource_count']   => 'blue',
@@ -254,7 +268,7 @@ mab.html do
                   if metric
                     div :style=>"width: #{metric}px;" <<
                        "background-color:#{color}" do
-                      tag! :font, :color => 'grey' do
+                      tag! :font, :color => 'black' do
                       "#{metric}&nbsp;"
                       end
                     end
@@ -276,8 +290,22 @@ mab.html do
               end
               tag! :i, "Last compiled: #{catalog_diff['timestamp']} with #{catalog_diff['produced_by']}"
             end
-            h4 "Conflicting Resources on #{catalog_diff['node_name']}"
+            # NODE Level Conflicts
+            if catalog_diff['missing_resources']
+              h4 "Missing Resources on #{catalog_diff['node_name']}"
+              catalog_diff['missing_resources'].sort_by{ |h| h['type']}.each do |missing|
+               ul do
+                 li do
+                   # LINK 01 
+                   a :href => "#missing_#{missing['type']}_#{missing['title']}".gsub(/[:\/\.]/,'_') do
+                   '%s[%s]' % [missing['type'],missing['title']]
+                   end
+                 end
+                end
+              end
+            end
             if catalog_diff['conflicting_resources']
+              h4 "Conflicting Resources on #{catalog_diff['node_name']}"
               ul do 
                 catalog_diff['conflicting_resources'].each do |conflict|
                   li do
