@@ -192,27 +192,22 @@ mab.html do
           ul do
             table do
             td do
-                div :style=>"width: #{catalog_diff['baseline_resource_count']}px;" <<
-                   "background-color:black;" do
-                  "&nbsp;"
-                  end
-                div :style=>"width: #{catalog_diff['preview_resource_count']}px;" <<
-                   "background-color:cyan;" do
-                  "&nbsp;"
-                end
-                div :style=>"width: #{catalog_diff['missing_resource_count']}px;" <<
-                   "background-color:red;" do
-                  "&nbsp;"
-                end
-                if catalog_diff['added_resources_count']
-                  div :style=>"width: #{catalog_diff['added_resources_count']}px;" <<
-                     "background-color:green;" do
-                    "#{catalog_diff['added_resources_count']}&nbsp;"
+                graph = {
+                  catalog_diff['baseline_resource_count']      => 'black',
+                  catalog_diff['preview_resource_count']       => 'cyan',
+                  catalog_diff['missing_resource_count']       => 'red',
+                  catalog_diff['added_resources_count']        => 'green',
+                  catalog_diff['conflicting_resource_count']   => 'blue',
+                }
+                graph.each do |metric,color|
+                if metric
+                  div :style=>"width: #{metric}px;" <<
+                     "background-color:#{color}" do
+                    tag! :font, :color => 'white' do
+                    "#{metric}&nbsp;"
+                    end
                   end
                 end
-                div :style=>"width: #{catalog_diff['conflicting_resource_count']}px;" <<
-                   "background-color:blue;" do
-                  "&nbsp;"
                 end
               end
             end
