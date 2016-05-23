@@ -24,29 +24,38 @@ preview = overview['preview']
 mab = Markaby::Builder.new
 mab.html do
   def make_error_readable(error)
-    h5.entryTitle "Information about this issue"
-    case error
-    # MIGRATE4_REVIEW_IN_EXPRESSION
-    when 'MIGRATE4_REVIEW_IN_EXPRESSION'
-      tag! :body, :id => "overview_#{error}_#{rand()}" do
-        <<-eos
-        In Puppet 3, the #{tag! :code, 'in'} operator was not well specified and there were several undefined behaviors. This relates to, but is not limited to:
-        eos
-      end
-      ul do
-        li 'String / numeric automatic conversions.'
-        li 'Applying regular expressions to non string values causing auto conversion.'
-        li 'Confusion over comparisons between empty string/undef/nil (internal) values.'
-        li 'In-operator not using case independent comparisons in Puppet 3.'
-      end
-      br
-      body 'To fix, review the expectations against the Puppet language specification.'
-      br
-      body "For a detailed description of this issue, see "
-      a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
-    else
-      tag! :body, :id => "overview_#{error}_#{rand()}" do
-         a "No information defined for this error click here for more infromation", :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase
+    css = [
+      'color: black',
+      'border-radius: 10px',
+      'background-color: white',
+      'border-radius: 10px',
+      'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";',
+    ]
+    div :style=>css.join(';') do
+      h5.entryTitle "Information about this issue"
+      case error
+      # MIGRATE4_REVIEW_IN_EXPRESSION
+      when 'MIGRATE4_REVIEW_IN_EXPRESSION'
+        tag! :body, :id => "overview_#{error}_#{rand()}" do
+          <<-eos
+          In Puppet 3, the #{tag! :code, 'in'} operator was not well specified and there were several undefined behaviors. This relates to, but is not limited to:
+          eos
+        end
+        ul do
+          li 'String / numeric automatic conversions.'
+          li 'Applying regular expressions to non string values causing auto conversion.'
+          li 'Confusion over comparisons between empty string/undef/nil (internal) values.'
+          li 'In-operator not using case independent comparisons in Puppet 3.'
+        end
+        br
+        body 'To fix, review the expectations against the Puppet language specification.'
+        br
+        body "For a detailed description of this issue, see "
+        a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
+      else
+        tag! :body, :id => "overview_#{error}_#{rand()}" do
+           a "No information defined for this error click here for more infromation", :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase
+        end
       end
     end
   end
@@ -67,7 +76,7 @@ mab.html do
               end
             end
            else
-            div :style=> "background-color:#f5f5f5" do
+            div :style=> "background-color:white" do
               tag! :font, :color => 'black' do
               "#{nu}:#{file[(nu - 1)]}"
               end
@@ -85,9 +94,13 @@ mab.html do
       body "This issue occured on #{nodes.length} nodes"
       ul do
         nodes[0..10].each do |node|
-            li do
-              a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
-            end
+           div :style=>"font-size: 1.0rem;" do
+             tag! :font, :color => 'black' do
+               li do
+                 a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
+               end
+             end
+           end
         end
       end
     end
@@ -98,39 +111,71 @@ mab.html do
     detail.each do |title,breakdown|
       ul do
         li do
-          # LINK 01
-          a :name => "#{header.downcase}_#{type}_#{title}".gsub(/[:\/\.]/,'_') do
-            "#{type}[#{title}] is #{header}"
+          div :style=>"font-size: 1.3rem;" do
+            # LINK 01
+            a :name => "#{header.downcase}_#{type}_#{title}".gsub(/[:\/\.]/,'_') do
+              "#{type}[#{title}] is #{header}"
+            end
           end
         end
         breakdown.each do |path,nodes|
         #### Example nodes
-        ul do
-          ul do
-            # Path for classes is unknown
-            unless path == UNKNOWN_FILE_PATH
-               file_path,line_number = path.split(':')
-               h5.entryTitle "#{header.capitalize} resource ending on line #{line_number} (view node report for details)"
-               p path
-               read_code_off_disk(header,file_path,line_number)
-               br
-              end
+          css = [
+            'color: black',
+            'border-radius: 10px',
+            'background-color: white',
+            'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";',
+            'border-bottom-width: 1px;',
+            'border-bottom-style: dotted;',
+            'border-bottom-color: rgb(221, 221, 221);',
+            'padding-bottom: 20px;',
+          ]
+          div :style=>css.join(';') do
+              ul do
+                ul do
+                  # Path for classes is unknown
+                  unless path == UNKNOWN_FILE_PATH
+                     file_path,line_number = path.split(':')
+                     h5.entryTitle "#{header.capitalize} resource ending on line #{line_number} (view node report for details)"
+                     p path
+                     read_code_off_disk(header,file_path,line_number)
+                     br
+                    end
+                  end
+                  # N number of example nodes
+                  node_break_down(nodes)
+                  br
             end
-            # N number of example nodes
-            node_break_down(nodes)
-            br
           end
         end
       end
     end
   end
 
+  def header1(title)
+    css = [
+      'color: #33353f',
+      'background-color: #dcdcdc',
+      'font-size: 10px',
+      'line-height: 20px',
+      'display: block',
+      'letter-spacing: normal',
+      'padding: 15px',
+      'border-radius: 15px',
+      'margin: 0',
+      'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";'
+    ]
+    div :style=>css.join(';') do
+      h1 title
+    end
+  end
+
   head { title "Diff Overview" }
-  body do
+  body :bgcolor => '#ffffff' do
 
     error_message = Hash.new
     # TOP TEN
-    h1 "Top 10 nodes with issues"
+    header1 "Top 10 nodes with issues"
     hr
     body "The following nodes had the most issues including missing or conflicting catalogs."
     br
@@ -157,7 +202,7 @@ mab.html do
 
     # FAILURES
     unless total_failures == 0 
-      h1 "Catalog Compliation Failures"
+      header1 "Catalog Compliation Failures"
       div.failure_overview! {
         # 0 out X summary
         <<-eos
@@ -166,7 +211,7 @@ mab.html do
         eos
       }
       # FILE WITH ISSUES 
-      h1 "Files that caused the most failures"
+      header1 "Files that caused the most failures"
       # Compliation Errors Breakdown
       ul do
         next unless preview['compilation_errors']
@@ -191,8 +236,8 @@ mab.html do
       end
     end
     # CONFLICTS
-    if stats['conflicting'] 
-      h1 "Catalog Compliation Known Issues"
+    if stats['conflicting']
+      header1 "Catalog Compliation Known Issues"
       hr
       total_conflicts = stats['conflicting']['total'] || 0
       div.conflict_overview! {
@@ -203,31 +248,42 @@ mab.html do
         eos
       }
       preview['warning_count_by_issue_code'].each do |issue|
-        ul do
-          issue['manifests'].each do |manifest,lines|
-            li do
-              a manifest, :name => manifest.gsub(/[\/\.]/,'_')
-            end
-            ul do
-              #### Error by line breakdown
-              lines.uniq.each do |linepos|
-                line_number = linepos.split(':')[0]
-                # Use the preview message human readable and fallback to issue code when not present
-                h4.entryTitle "Line #{line_number}: #{error_message[issue['issue_code']] || issue['issue_code']}"
-
-                read_code_off_disk('warning',manifest,line_number)
-
-                br
-                # Show human reable error or link
-                make_error_readable(issue['issue_code'])
+        css = [
+          'color: black',
+          'border-radius: 10px',
+          'background-color: #f6f6f6',
+          'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";',
+          'border-bottom-width: 1px;',
+          'border-bottom-style: dotted;',
+          'border-bottom-color: rgb(221, 221, 221);',
+        ]
+        div :style=>css.join(';') do
+          ul do
+            issue['manifests'].each do |manifest,lines|
+              li do
+                a manifest, :name => manifest.gsub(/[\/\.]/,'_')
               end
-            end 
+              ul do
+                #### Error by line breakdown
+                lines.uniq.each do |linepos|
+                  line_number = linepos.split(':')[0]
+                  # Use the preview message human readable and fallback to issue code when not present
+                  h4.entryTitle "Line #{line_number}: #{error_message[issue['issue_code']] || issue['issue_code']}"
+
+                  read_code_off_disk('warning',manifest,line_number)
+
+                  br
+                  # Show human reable error or link
+                  make_error_readable(issue['issue_code'])
+                end
+              end 
+            end
           end
         end
       end
       # CHANGES
       if overview['changes']
-        h1 "Resource Breakdown"
+        header1 "Resource Breakdown"
         hr
         overview['changes']['resource_type_changes'].each do |type,details|
           ul do
@@ -244,7 +300,7 @@ mab.html do
         end
       end
       # NODES
-      h1 "Node breakdown"
+      header1 "Node breakdown"
       ul do
         find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
           catalog_diff = load_json(catalog_diff_file)
