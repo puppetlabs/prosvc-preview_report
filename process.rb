@@ -60,7 +60,7 @@ mab.html do
     tag! :code, :id => "manifest_#{header}_#{manifest}_#{line_number}_#{rand()}" do
       ((line_number - 1)..(line_number + 1)).each do |nu|
         div.entryContent do
-          if nu == line_number - 1 
+          if nu == line_number - 1
             "#{tag! :b, nu}:#{tag! :b, file[(nu - 1)]}"
            else
             "#{nu}:#{file[(nu - 1)]}"
@@ -74,17 +74,19 @@ mab.html do
   def node_break_down(nodes)
     ul do
       # Only show 10 nodes
-      h5 "#{nodes.length} nodes with this issue"
-      nodes[0..10].each do |node|
-          li do
-            a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
-          end
+      body "This issue occured on #{nodes.length} nodes"
+      ul do
+        nodes[0..10].each do |node|
+            li do
+              a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
+            end
+        end
       end
     end
   end
 
   def process_breakdown(header,type,detail)
-    h3 "#{header.capitalize} #{type} resources"
+    h3 "Found #{header} #{type} resources"
     detail.each do |title,breakdown|
       ul do
         li do
@@ -97,7 +99,7 @@ mab.html do
             # Path for classes is unknown
             unless path == UNKNOWN_FILE_PATH
                file_path,line_number = path.split(':')
-               h5.entryTitle "#{header.capitalize} resource from line #{line_number}"
+               h5.entryTitle "#{header.capitalize} resource ending on line #{line_number} (view node report for details)"
                p path
                read_code_off_disk(header,file_path,line_number)
                br
@@ -252,7 +254,7 @@ mab.html do
                   if metric
                     div :style=>"width: #{metric}px;" <<
                        "background-color:#{color}" do
-                      tag! :font, :color => 'white' do
+                      tag! :font, :color => 'grey' do
                       "#{metric}&nbsp;"
                       end
                     end
@@ -262,7 +264,7 @@ mab.html do
               end
               table do
                 catalog_diff.each do |key,value|
-                  next if ['missing_resources','conflicting_resources','missing_edges'].include?(key)
+                  next if ['missing_resources','conflicting_resources','missing_edges','produced_by','timestamp','node_name'].include?(key)
                   next if value.nil?
                   if value.kind_of?(Array) then next if value.empty? end
                   next if value == 0
@@ -272,6 +274,7 @@ mab.html do
                   end
                 end
               end
+              tag! :i, "Last compiled: #{catalog_diff['timestamp']} with #{catalog_diff['produced_by']}"
             end
             h4 "Conflicting Resources on #{catalog_diff['node_name']}"
             if catalog_diff['conflicting_resources']
@@ -290,13 +293,22 @@ mab.html do
                          '}',
                         ].each do |line|
                         tag! :code do
-                          if line =~ /^\+.*/
-                            tag! :b, line
+                          if line =~ /^\-.*/
+                            div :style=> "background-color:#ffecec" do
+                              tag! :font, :color => '#bd2c00' do
+                              "#{line}&nbsp;"
+                              end
+                            end
+                          elsif line =~/^\+.*/
+                            div :style=> "background-color:#eaffea" do
+                              tag! :font, :color => '#55a532' do
+                              "#{line}&nbsp;"
+                              end
+                            end
                           else
                             line
                           end
                         end
-                        br
                         end
                         hr
                       end
