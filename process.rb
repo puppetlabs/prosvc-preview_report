@@ -179,7 +179,7 @@ mab.html do
     # CONFLICTS
     if stats['conflicting'] 
       total_conflicts = stats['conflicting']['total'] || 0
-      h1 "Catalog Compliation Conflicts/Differences"
+      h1 "Catalog Compliation Known Issues"
       div.conflict_overview! {
         # 0 out X summary
         <<-eos
@@ -210,51 +210,6 @@ mab.html do
           end
         end
       end
-      # NODES
-      h1 "Node breakdown"
-      ul do
-        find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
-          catalog_diff = load_json(catalog_diff_file)
-          li do
-            a catalog_diff['node_name'], :name => catalog_diff['node_name'].gsub(/[-\/\.]/,'_')
-          end
-          ul do
-            table do
-            td do
-                graph = {
-                  catalog_diff['baseline_resource_count']      => 'black',
-                  catalog_diff['preview_resource_count']       => 'cyan',
-                  catalog_diff['missing_resource_count']       => 'red',
-                  catalog_diff['added_resources_count']        => 'green',
-                  catalog_diff['conflicting_resource_count']   => 'blue',
-                }
-                graph.each do |metric,color|
-                if metric
-                  div :style=>"width: #{metric}px;" <<
-                     "background-color:#{color}" do
-                    tag! :font, :color => 'white' do
-                    "#{metric}&nbsp;"
-                    end
-                  end
-                end
-                end
-              end
-            end
-            table do
-              catalog_diff.each do |key,value|
-                next if ['missing_resources','conflicting_resources','missing_edges'].include?(key)
-                next if value.nil?
-                if value.kind_of?(Array) then next if value.empty? end
-                next if value == 0
-                table  do
-                  th "#{key.capitalize.gsub(/_/,' ')}:"
-                  td value
-                end
-              end
-            end
-          end
-        end
-      end
       # CHANGES
       if overview['changes']
         h1 "Resources with changes or conflicts"
@@ -270,6 +225,86 @@ mab.html do
               process_breakdown('conflicting',type,details['conflicting_resources']) 
             end
           end
+        end
+      end
+      # NODES
+      h1 "Node breakdown"
+      ul do
+        find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
+          catalog_diff = load_json(catalog_diff_file)
+          li do
+            h3 do
+              a catalog_diff['node_name'], :name => catalog_diff['node_name'].gsub(/[-\/\.]/,'_')
+            end
+          end
+          # Node stats table
+          ul do
+            table do
+              td do
+                  graph = {
+                    catalog_diff['baseline_resource_count']      => 'black',
+                    catalog_diff['preview_resource_count']       => 'cyan',
+                    catalog_diff['missing_resource_count']       => 'red',
+                    catalog_diff['added_resources_count']        => 'green',
+                    catalog_diff['conflicting_resource_count']   => 'blue',
+                  }
+                  graph.each do |metric,color|
+                  if metric
+                    div :style=>"width: #{metric}px;" <<
+                       "background-color:#{color}" do
+                      tag! :font, :color => 'white' do
+                      "#{metric}&nbsp;"
+                      end
+                    end
+                  end
+                  end
+                end
+              end
+              table do
+                catalog_diff.each do |key,value|
+                  next if ['missing_resources','conflicting_resources','missing_edges'].include?(key)
+                  next if value.nil?
+                  if value.kind_of?(Array) then next if value.empty? end
+                  next if value == 0
+                  table  do
+                    th "#{key.capitalize.gsub(/_/,' ')}:"
+                    td value
+                  end
+                end
+              end
+            end
+            h4 "Conflicting Resources on #{catalog_diff['node_name']}"
+            if catalog_diff['conflicting_resources']
+              ul do 
+                catalog_diff['conflicting_resources'].each do |conflict|
+                  li do
+                    "#{conflict['type']}[#{conflict['title']}]"
+                  end
+                  ul do
+                    ul do
+                      conflict['conflicting_attributes'].each do |attribute|
+                        hr
+                        ['%s[\'%s\'] {'   % [conflict['type'].downcase,conflict['title'].downcase],
+                         '- %s => %s' % [attribute['name'],attribute['baseline_value'].inspect],
+                         '+ %s => %s' % [attribute['name'],attribute['preview_value'].inspect],
+                         '}',
+                        ].each do |line|
+                        tag! :code do
+                          if line =~ /^\+.*/
+                            tag! :b, line
+                          else
+                            line
+                          end
+                        end
+                        br
+                        end
+                        hr
+                      end
+                    end
+                  end
+                end
+              end
+            end
         end
       end
     end
