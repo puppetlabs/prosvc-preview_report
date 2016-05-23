@@ -83,6 +83,35 @@ mab.html do
     end
   end
 
+  def process_breakdown(header,type,detail)
+    h3 "#{header.capitalize} #{type} resources"
+    detail.each do |title,breakdown|
+      ul do
+        li do
+          "#{tag! :b, type}[#{title}]"
+        end
+        breakdown.each do |path,nodes|
+        #### Example nodes
+        ul do
+          ul do
+            # Path for classes is unknown
+            unless path == UNKNOWN_FILE_PATH
+               file_path,line_number = path.split(':')
+               h5.entryTitle "#{header.capitalize} resource from line #{line_number}"
+               p path
+               read_code_off_disk(header,file_path,line_number)
+               br
+              end
+            end
+            # N number of example nodes
+            node_break_down(nodes)
+            br
+          end
+        end
+      end
+    end
+  end
+
   head { title "Diff Overview" }
   body do
 
@@ -234,34 +263,6 @@ mab.html do
             # Type i.e. Class,File 
             h2 type
             hr
-            def process_breakdown(header,type,detail)
-              h3 "#{header.capitalize} #{type} resources"
-              detail.each do |title,breakdown|
-                ul do
-                  li do
-                    "#{tag! :b, type}[#{title}]"
-                  end
-                  breakdown.each do |path,nodes|
-                  #### Example nodes
-                  ul do
-                    ul do
-                      # Path for classes is unknown
-                      unless path == UNKNOWN_FILE_PATH
-                         file_path,line_number = path.split(':')
-                         h5.entryTitle "#{header.capitalize} resource from line #{line_number}"
-                         p path
-                         read_code_off_disk(header,file_path,line_number)
-                         br
-                        end
-                      end
-                      # N number of example nodes
-                      node_break_down(nodes)
-                      br
-                    end
-                  end
-                end
-              end
-            end
             if details['missing_resources']
               process_breakdown('missing',type,details['missing_resources'])
             end
