@@ -483,6 +483,7 @@ mab.html do
                           'padding-right: 15px',
                           'padding-bottom: 15px',
                           'padding-left: 15px',
+                          'border-left-width: 4px',
                           'width: 768',
                         ]
                         div :style=>css.join(';') do
