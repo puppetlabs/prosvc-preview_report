@@ -64,6 +64,7 @@ mab.html do
       'border-width: 1px',
       'border-bottom-width: 1px;',
       'border-bottom-style: dotted',
+      'border-left-width: 4px',
       'border-style: dotted solid',
       'border-color: rgb(221, 221, 221);',
       'padding-bottom: 10px;',
