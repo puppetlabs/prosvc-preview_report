@@ -249,6 +249,13 @@ mab.html do
         ul do
           preview_log.each do |issue|
             li do
+              # Find file path in error if we don't have a file path from preview
+              match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
+              if issue['file'].nil? and match
+                issue['file'] = match[1]
+              else
+                next
+              end
               # Work around the fact overview doesn't have human readable messages
               # we store them here and then use them in the breakdown below
               error_message[issue['issue_code']] = issue['message']
@@ -284,8 +291,15 @@ mab.html do
                 #### Error by line breakdown
                 error['errors'].each do |e|
                   h4.entryTitle "#{e['message']} on line #{e['line']}"
-                  # Read the file off disk to find the code question.
-                  read_code_off_disk('failed',error['manifest'],e['line'])
+                  # Find file path in error if we don't have a file path from preview
+                  match = /(\S*(\/\S*\.pp|\.erb))/.match(e['message'].to_s)
+                  if error['manifest'].nil? and match
+                    error['manifest'] = match[1]
+                  end
+                  if error['manifest']
+                    # Read the file off disk to find the code question
+                    read_code_off_disk('failed',error['manifest'],e['line'])
+                  end
                   #### Example nodes
                   node_break_down(error['nodes'])
                 end
