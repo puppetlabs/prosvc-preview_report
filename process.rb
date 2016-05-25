@@ -92,7 +92,7 @@ mab.html do
     end
   end
 
-  def node_break_down(nodes)
+  def node_break_down(nodes, resource =nil)
     ul do
       # Only show 10 nodes
       body "This issue occured on #{nodes.length} nodes"
@@ -100,8 +100,13 @@ mab.html do
         nodes[0..10].each do |node|
            div :style=>"font-size: 1.0rem;" do
              tag! :font, :color => 'black' do
+               # LINK 2 or LINK 3
                li do
-                 a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
+                 if resource.nil?
+                   a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
+                 else
+                   a node, :href => '#%s' % "#{node}_#{resource.gsub(/[\[\] :\/\.]/,'_')}".gsub(/[-\/\.]/,'_')
+                 end
                end
              end
            end
@@ -147,7 +152,7 @@ mab.html do
                     end
                   end
                   # N number of example nodes
-                  node_break_down(nodes)
+                  node_break_down(nodes,"#{type}[#{title}]")
                   br
             end
           end
@@ -170,7 +175,9 @@ mab.html do
       'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";'
     ]
     div :style=>css.join(';') do
-      h1 title
+      h1 do
+        a title, :name => title.downcase.gsub(/[ \/\.]/,'_')
+      end
     end
   end
 
@@ -234,6 +241,20 @@ mab.html do
        img :src => PUPPET_LOGO
     end
     error_message = Hash.new
+    # TOC
+    header1 "Catalog Preview Report"
+    ul do
+      [
+        "Top 10 nodes with issues",
+        "Catalog Compliation Known Issues",
+        "Resource Breakdown",
+        "Node breakdown",
+      ].each do |title|
+        li do
+          a title, :href => "#%s" % title.downcase.gsub(/[ \/\.]/,'_')
+        end
+      end
+    end
     # TOP TEN
     header1 "Top 10 nodes with issues"
     hr
@@ -467,7 +488,7 @@ mab.html do
             end
             # NODE Level Conflicts
             if catalog_diff['missing_resources']
-              header4 "Missing Resources on #{catalog_diff['node_name']}"
+              header4 "Missing Resources on #{catalog_diff['node_name']}" unless catalog_diff['missing_resource_count'].zero?
               catalog_diff['missing_resources'].sort_by{ |h| h['type']}.each do |missing|
                ul do
                  li do
@@ -480,7 +501,7 @@ mab.html do
               end
             end
             if catalog_diff['added_resources']
-              header4 "Added Resources on #{catalog_diff['node_name']}"
+              header4 "Added Resources on #{catalog_diff['node_name']}" unless catalog_diff['added_resource_count'].zero?
               catalog_diff['added_resources'].sort_by{ |h| h['type']}.each do |added|
                ul do
                  li do
@@ -497,7 +518,7 @@ mab.html do
               ul do 
                 catalog_diff['conflicting_resources'].each do |conflict|
                   li do
-                    "#{conflict['type']}[#{conflict['title']}]"
+                    a "#{conflict['type']}[#{conflict['title']}]", :name => "#{catalog_diff['node_name']}_#{conflict['type']}[#{conflict['title']}]".gsub(/[\[\] :\/\.]/,'_')
                   end
                   ul do
                     ul do
