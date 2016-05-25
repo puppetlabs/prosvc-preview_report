@@ -287,7 +287,7 @@ mab.html do
                   # Read the file off disk to find the code question.
                   read_code_off_disk('failed',error['manifest'],e['line'])
                   #### Example nodes
-                  node_break_down(nodes)
+                  node_break_down(error['nodes'])
                 end
               end
             end
