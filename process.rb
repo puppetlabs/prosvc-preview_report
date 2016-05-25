@@ -266,7 +266,16 @@ mab.html do
         #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
         li do
-          "#{tag! :b,node['issue_count']} issues on #{node['name']}"
+          a :href => '#%s' % node['name'].gsub(/[ \/\.]/,'_') do
+            css = [
+              'color: black',
+              'text-decoration: none',
+              'font-size: 1.2rem',
+            ]
+            div :style=>css.join(';') do
+              "#{tag! :b,node['issue_count']} issues on #{tag! :b, node['name']}"
+            end
+          end
         end
         ul do
           preview_log.each do |issue|
