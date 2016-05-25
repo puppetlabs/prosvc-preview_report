@@ -48,7 +48,9 @@ mab.html do
         a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
       else
         tag! :body, :id => "overview_#{error}_#{rand()}" do
-           a "No information defined for this error click here for more infromation", :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase
+           a :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase do
+             tag! :i, "No information defined for this error click here for more infromation"
+           end
         end
       end
   end
@@ -370,14 +372,30 @@ mab.html do
           ul do
             issue['manifests'].each do |manifest,lines|
               li do
-                a manifest, :name => manifest.gsub(/[\/\.]/,'_')
+                a :name => manifest.gsub(/[\/\.]/,'_') do
+                   css = [
+                     'color: black',
+                     'text-decoration: none',
+                     'font-size: 1.2rem',
+                   ]
+                  div :style=>css.join(';') do
+                    tag! :b, manifest
+                  end
+                end
               end
               ul do
                 #### Error by line breakdown
                 lines.uniq.each do |linepos|
                   line_number = linepos.split(':')[0]
                   # Use the preview message human readable and fallback to issue code when not present
-                  h4.entryTitle "Line #{line_number}: #{error_message[issue['issue_code']] || issue['issue_code']}"
+                  h4.entryTitle do
+                    css = [
+                     'color: #666',
+                    ]
+                    div :style=>css.join(';') do
+                      "Line #{line_number}: #{error_message[issue['issue_code']] || issue['issue_code']}"
+                    end
+                  end
 
                   read_code_off_disk('warning',manifest,line_number)
 
