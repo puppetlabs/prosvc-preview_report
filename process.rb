@@ -242,6 +242,7 @@ mab.html do
     body "These nodes are likely the best for testing the breakdown issue list below."
     ul do
       overview['top_ten'].each do |node|
+        #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
         li do
           "#{tag! :b,node['issue_count']} issues on #{node['name']}"
@@ -253,8 +254,6 @@ mab.html do
               match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
               if issue['file'].nil? and match
                 issue['file'] = match[1]
-              else
-                next
               end
               # Work around the fact overview doesn't have human readable messages
               # we store them here and then use them in the breakdown below
@@ -383,6 +382,11 @@ mab.html do
       header1 "Node breakdown"
       ul do
         find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
+          #puts catalog_diff_file
+          if File.zero?(catalog_diff_file)
+            body "Diff file empty on disk: #{catalog_diff_file}"
+            next
+          end
           catalog_diff = load_json(catalog_diff_file)
           li do
             h3 do
@@ -415,7 +419,7 @@ mab.html do
               table do
                 count = 0
                 catalog_diff.each do |key,value|
-                  next if ['missing_resources','conflicting_resources','missing_edges','produced_by','timestamp','node_name'].include?(key)
+                  next if ['added_resources','missing_resources','conflicting_resources','missing_edges','produced_by','timestamp','node_name'].include?(key)
                   next if value.nil?
                   if value.kind_of?(Array) then next if value.empty? end
                   next if value == 0
@@ -470,6 +474,19 @@ mab.html do
                    # LINK 01 
                    a :href => "#missing_#{missing['type']}_#{missing['title']}".gsub(/[:\/\.]/,'_') do
                    '%s[%s]' % [missing['type'],missing['title']]
+                   end
+                 end
+                end
+              end
+            end
+            if catalog_diff['added_resources']
+              header4 "Added Resources on #{catalog_diff['node_name']}"
+              catalog_diff['added_resources'].sort_by{ |h| h['type']}.each do |added|
+               ul do
+                 li do
+                   # LINK 01
+                   a :href => "#added_#{added['type']}_#{added['title']}".gsub(/[:\/\.]/,'_') do
+                   '%s[%s]' % [added['type'],added['title']]
                    end
                  end
                 end
