@@ -1,6 +1,7 @@
 #!/opt/puppet/bin/ruby
 require 'markaby'
 require 'json'
+require 'uri'
 
 UNKNOWN_FILE_PATH = 'unknown location'
 
@@ -55,6 +56,11 @@ mab.html do
       end
   end
 
+  def normalize_name(name)
+    #name.downcase.gsub(/[\-\[\] :\/\.]/,'_')
+    URI.escape(name).gsub(/[\-\[\] :\/\.]/,'_').to_s
+  end
+
   def read_code_off_disk(header,manifest,line_number)
     line_number = (line_number.to_i + 1)
     # Read the file off disk to find the code question.
@@ -105,9 +111,9 @@ mab.html do
                # LINK 2 or LINK 3
                li do
                  if resource.nil?
-                   a node, :href => '#%s' % node.gsub(/[-\/\.]/,'_')
+                   a node, :href => '#%s' % node_name(node)
                  else
-                   a node, :href => '#%s' % "#{node}_#{resource.gsub(/[\[\] :\/\.]/,'_')}".gsub(/[-\/\.]/,'_')
+                   a node, :href => '#%s' % normalize_name("#{node}_#{resource}")
                  end
                end
              end
@@ -124,7 +130,7 @@ mab.html do
         li do
           div :style=>"font-size: 1.3rem;" do
             # LINK 01
-            a :name => "#{header.downcase}_#{type}_#{title}".gsub(/[:\/\.]/,'_') do
+            a :name => normalize_name("#{header}_#{type}_#{title}") do
               "#{type}[#{title}] is #{header}"
             end
           end
@@ -178,7 +184,7 @@ mab.html do
     ]
     div :style=>css.join(';') do
       h1 do
-        a title, :name => title.downcase.gsub(/[ \/\.]/,'_')
+        a title, :name => normalize_name(title)
       end
     end
   end
@@ -219,7 +225,15 @@ mab.html do
     end
   end
 
-  head { title "Diff Overview" }
+  head do
+    title "Diff Overview"
+      meta :name => "keywords", :content => "puppet, diff, preview"
+      style :type => "text/css" do
+        %[
+          body { font: 20px/120% "Helvetica Neue",Helvetica,Arial, sans-serif }
+        ]
+      end
+  end
   body :bgcolor => '#ffffff' do
     css = [
       'color: white',
@@ -253,7 +267,7 @@ mab.html do
         "Node breakdown",
       ].each do |title|
         li do
-          a title, :href => "#%s" % title.downcase.gsub(/[ \/\.]/,'_')
+          a title, :href => "#%s" % normalize_name(title)
         end
       end
     end
@@ -268,7 +282,7 @@ mab.html do
         #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
         li do
-          a :href => '#%s' % node['name'].gsub(/[ \/\.]/,'_') do
+          a :href => '#%s' % normalize_name(node['name']) do
             css = [
               'color: black',
               'text-decoration: none',
@@ -290,7 +304,7 @@ mab.html do
               # Work around the fact overview doesn't have human readable messages
               # we store them here and then use them in the breakdown below
               error_message[issue['issue_code']] = issue['message']
-              a "#{issue['file']}:#{issue['line']}", :href => "#%s" % issue['file'].gsub(/[\/\.]/,'_')
+              a "#{issue['file']}:#{issue['line']}", :href => "#%s" % normalize_name(issue['file'])
             end
           end
         end
@@ -304,7 +318,7 @@ mab.html do
       div.failure_overview! {
         # 0 out X summary
         <<-eos
-        #{tag! :strong, stats['node_count'] - total_failures} out of #{stats['node_count']} failed to compile their catalog.
+        #{tag! :strong,total_failures} out of #{stats['node_count']} nodes failed to compile their catalog.
         This is #{tag! :strong, stats['failures']['percent']}% failure rate across your infrastructure
         eos
       }
@@ -359,7 +373,7 @@ mab.html do
       div :style=>css.join(';') do
         # 0 out X summary
         <<-eos
-        #{tag! :strong, stats['node_count'] - total_conflicts} out of #{stats['node_count']} have conflicts/differences in their catalog.
+        #{tag! :strong,total_conflicts} out of #{stats['node_count']} nodes have conflicts/differences in their catalog.
         This is #{tag! :strong, stats['conflicting']['percent']}% conflict rate across your infrastructure
         eos
       end
@@ -372,7 +386,7 @@ mab.html do
           ul do
             issue['manifests'].each do |manifest,lines|
               li do
-                a :name => manifest.gsub(/[\/\.]/,'_') do
+                a :name => normalize_name(manifest) do
                    css = [
                      'color: black',
                      'text-decoration: none',
@@ -438,7 +452,7 @@ mab.html do
           catalog_diff = load_json(catalog_diff_file)
           li do
             h3 do
-              a catalog_diff['node_name'], :name => catalog_diff['node_name'].gsub(/[-\/\.]/,'_')
+              a catalog_diff['node_name'], :name => normalize_name(catalog_diff['node_name'])
             end
           end
           # Node stats table
@@ -446,21 +460,35 @@ mab.html do
             table do
               td do
                   graph = {
-                    catalog_diff['baseline_resource_count']      => 'grey',
-                    catalog_diff['preview_resource_count']       => 'black',
-                    catalog_diff['missing_resource_count']       => 'red',
-                    catalog_diff['added_resources_count']        => 'green',
-                    catalog_diff['conflicting_resource_count']   => 'blue',
+                    'baseline_resource_count'      => 'grey',
+                    'preview_resource_count'       => 'black',
+                    'missing_resource_count'       => 'red',
+                    'added_resource_count'         => 'green',
+                    'conflicting_resource_count'   => 'blue',
                   }
-                  graph.each do |metric,color|
-                  if metric
-                    div :style=>"width: #{metric}px;" <<
-                       "background-color:#{color}" do
-                      tag! :font, :color => 'black' do
-                      "#{metric}&nbsp;"
+                  table do
+                    graph.each do |key,color|
+                      next if catalog_diff[key].nil?
+                      next if catalog_diff[key].zero?
+                      css = [
+                        'color: white',
+                        "background-color: #{color}",
+                        'text-align: center ',
+                        'position: relative',
+                        "width: #{(catalog_diff[key])}px",
+                        "line-height: #{(catalog_diff[key])}px",
+                        'border-radius: 50%',
+                        'text-align: center',
+                      ]
+                      td do
+                        div :style => css.join(';') do
+                          body catalog_diff[key]
+                        end
+                        div :style => 'font-size: smaller;color: black;' do
+                          tag! :b, key.capitalize.gsub('_',' ')
+                        end
                       end
                     end
-                  end
                   end
                 end
               end
@@ -520,7 +548,7 @@ mab.html do
                ul do
                  li do
                    # LINK 01 
-                   a :href => "#missing_#{missing['type']}_#{missing['title']}".gsub(/[:\/\.]/,'_') do
+                   a :href => normalize_name("#missing_#{missing['type']}_#{missing['title']}") do
                    '%s[%s]' % [missing['type'],missing['title']]
                    end
                  end
@@ -533,7 +561,7 @@ mab.html do
                ul do
                  li do
                    # LINK 01
-                   a :href => "#added_#{added['type']}_#{added['title']}".gsub(/[:\/\.]/,'_') do
+                   a :href => normalize_name("#added_#{added['type']}_#{added['title']}") do
                    '%s[%s]' % [added['type'],added['title']]
                    end
                  end
@@ -545,7 +573,9 @@ mab.html do
               ul do 
                 catalog_diff['conflicting_resources'].each do |conflict|
                   li do
-                    a "#{conflict['type']}[#{conflict['title']}]", :name => "#{catalog_diff['node_name']}_#{conflict['type']}[#{conflict['title']}]".gsub(/[\[\] :\/\.]/,'_')
+                    a :href => '#%s' % normalize_name("conflicting_#{conflict['type']}_#{conflict['title']}"),:name => normalize_name("#{catalog_diff['node_name']}_#{conflict['type']}[#{conflict['title']}]") do
+                      "#{conflict['type']}[#{conflict['title']}]"
+                    end
                   end
                   ul do
                     ul do
@@ -566,7 +596,7 @@ mab.html do
                           'width: 768',
                         ]
                         div :style=>css.join(';') do
-                           ['%s[\'%s\'] {'   % [conflict['type'].downcase,conflict['title'].downcase],
+                           ['%s{ \'%s\':'   % [conflict['type'].downcase,conflict['title'].downcase],
                             '- %s => %s' % [attribute['name'],attribute['baseline_value'].inspect],
                             '+ %s => %s' % [attribute['name'],attribute['preview_value'].inspect],
                             '}',
