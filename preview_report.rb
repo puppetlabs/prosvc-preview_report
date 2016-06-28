@@ -333,18 +333,20 @@ mab.html do
             end
           end
         end
-        ul do
-          preview_log.each do |issue|
-            li do
-              # Find file path in error if we don't have a file path from preview
-              match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
-              if issue['file'].nil? and match
-                issue['file'] = match[1]
+        unless preview_log.empty?
+          ul do
+            preview_log.each do |issue|
+              li do
+                # Find file path in error if we don't have a file path from preview
+                match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
+                if issue['file'].nil? and match
+                  issue['file'] = match[1]
+                end
+                # Work around the fact overview doesn't have human readable messages
+                # we store them here and then use them in the breakdown below
+                error_message[issue['issue_code']] = issue['message']
+                a "#{issue['file']}:#{issue['line']}", :href => "#%s" % normalize_name(issue['file'])
               end
-              # Work around the fact overview doesn't have human readable messages
-              # we store them here and then use them in the breakdown below
-              error_message[issue['issue_code']] = issue['message']
-              a "#{issue['file']}:#{issue['line']}", :href => "#%s" % normalize_name(issue['file'])
             end
           end
         end
@@ -394,7 +396,7 @@ mab.html do
         end
       end
     end
-    # CONFLICTS
+    # CONFLICTS (KNOWN ISSUES)
     if stats['conflicting']
       header1 "Catalog Compliation Known Issues"
       hr
@@ -425,6 +427,10 @@ mab.html do
         div :style=>css.join(';') do
           ul do
             issue['manifests'].each do |manifest,lines|
+              if lines.empty?
+                body ""
+                next
+              end
               li do
                 a :name => normalize_name(manifest) do
                    css = [
@@ -609,7 +615,7 @@ mab.html do
                 end
               end
             end
-            if catalog_diff['conflicting_resources']
+            if catalog_diff['conflicting_resources'] && ! catalog_diff['conflicting_resources'].empty?
               header4 "Conflicting Resources on #{catalog_diff['node_name']}"
               ul do 
                 catalog_diff['conflicting_resources'].each do |conflict|
