@@ -317,7 +317,8 @@ mab.html do
     br
     body "These nodes are likely the best for testing the breakdown issue list below."
     ul do
-      overview['top_ten'].each do |node|
+      #overview['top_ten'].each do |node|
+      overview['all_nodes'][0..9].each do |node|
         #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
         li do
@@ -482,7 +483,8 @@ mab.html do
       # NODES
       header1 "Node breakdown"
       ul do
-        find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
+        #find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
+        overview['all_nodes'].map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }.each do |catalog_diff_file|
           #puts catalog_diff_file
           if File.zero?(catalog_diff_file)
             body "Diff file empty on disk: #{catalog_diff_file}"
