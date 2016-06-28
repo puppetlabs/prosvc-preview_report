@@ -12,7 +12,8 @@ PUPPET_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4i
 opts = GetoptLong.new(
   [ '--format_json',   '-f', GetoptLong::REQUIRED_ARGUMENT],
   [ '--write_html',    '-w', GetoptLong::REQUIRED_ARGUMENT],
-  [ '--help',    '-h', GetoptLong::NO_ARGUMENT ],
+  [ '--pie_chart',     '-p', GetoptLong::NO_ARGUMENT ],
+  [ '--help',          '-h', GetoptLong::NO_ARGUMENT ],
 )
 
 
@@ -25,6 +26,8 @@ preview_report.rb [OPTIONS]
   The path to overview-json file created by puppet preview i.e. --view overview-json
 -w, --write_html [/path/to/saved_report.html]
   The path to where you would like to save the html report 
+-p, --pie_chart
+  Enable the "pie" charts for resource counts || defaults to off
   EOF
   exit 1
 end
@@ -38,6 +41,8 @@ opts.each do |opt,arg|
     @overview_json = arg
   when '--write_html'
     @html_file = arg
+  when '--pie_chart'
+    @pie_chart = true
   end
 end
 
@@ -203,6 +208,42 @@ mab.html do
                   br
             end
           end
+        end
+      end
+    end
+  end
+
+  def pie_chart(catalog_diff)
+    td do
+        graph = {
+          'baseline_resource_count'      => 'grey',
+          'preview_resource_count'       => 'black',
+          'missing_resource_count'       => 'red',
+          'added_resource_count'         => 'green',
+          'conflicting_resource_count'   => 'blue',
+        }
+        table do
+          graph.each do |key,color|
+            next if catalog_diff[key].nil?
+            next if catalog_diff[key].zero?
+            css = [
+              'color: white',
+              "background-color: #{color}",
+              'text-align: center ',
+              'position: relative',
+              "width: #{(catalog_diff[key])}px",
+              "line-height: #{(catalog_diff[key])}px",
+              'border-radius: 50%',
+              'text-align: center',
+            ]
+            td do
+              div :style => css.join(';') do
+                body catalog_diff[key]
+              end
+              div :style => 'font-size: smaller;color: black;' do
+                tag! :b, key.capitalize.gsub('_',' ')
+              end
+            end
         end
       end
     end
@@ -504,39 +545,9 @@ mab.html do
           end
           # Node stats table
           ul do
-            table do
-              td do
-                  graph = {
-                    'baseline_resource_count'      => 'grey',
-                    'preview_resource_count'       => 'black',
-                    'missing_resource_count'       => 'red',
-                    'added_resource_count'         => 'green',
-                    'conflicting_resource_count'   => 'blue',
-                  }
-                  table do
-                    graph.each do |key,color|
-                      next if catalog_diff[key].nil?
-                      next if catalog_diff[key].zero?
-                      css = [
-                        'color: white',
-                        "background-color: #{color}",
-                        'text-align: center ',
-                        'position: relative',
-                        "width: #{(catalog_diff[key])}px",
-                        "line-height: #{(catalog_diff[key])}px",
-                        'border-radius: 50%',
-                        'text-align: center',
-                      ]
-                      td do
-                        div :style => css.join(';') do
-                          body catalog_diff[key]
-                        end
-                        div :style => 'font-size: smaller;color: black;' do
-                          tag! :b, key.capitalize.gsub('_',' ')
-                        end
-                      end
-                    end
-                  end
+              table do
+                if @pie_chart
+                  pie_chart(catalog_diff)
                 end
               end
               table do
