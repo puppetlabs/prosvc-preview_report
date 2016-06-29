@@ -65,8 +65,9 @@ def find_diffs(diff_path)
 end
 
 overview = load_json(@overview_json)
-stats   = overview['stats']
-preview = overview['preview']
+stats    = overview['stats']
+preview  = overview['preview']
+baseline = overview['baseline']
 
 mab = Markaby::Builder.new
 mab.html do
@@ -249,6 +250,35 @@ mab.html do
     end
   end
 
+  def compile_breakdown(section)
+    return '' unless section['compilation_errors']
+    section['compilation_errors'].each do |error|
+      ul do
+        li "#{error['nodes'].size} nodes failed to compile: #{error['manifest']}"
+        ul do
+          div.entry do
+                                                                                  
+            #### Error by line breakdown
+            error['errors'].each do |e|
+              h4.entryTitle "#{e['message']} on line #{e['line']}"
+              # Find file path in error if we don't have a file path from preview
+              match = /(\S*(\/\S*\.pp|\.erb))/.match(e['message'].to_s)
+              if error['manifest'].nil? and match
+                error['manifest'] = match[1]
+              end
+              if error['manifest']
+                # Read the file off disk to find the code question
+                read_code_off_disk('failed',error['manifest'],e['line'])
+              end
+              #### Example nodes
+              node_break_down(error['nodes'])
+            end
+          end
+        end
+      end
+    end
+  end
+
   def header1(title)
     css = [
       'color: #33353f',
@@ -359,8 +389,12 @@ mab.html do
     body "These nodes are likely the best for testing the breakdown issue list below."
     ul do
       # PRE-101 Format changes removed this (beta) key , this raise will catch someone trying to generate an old report
-      raise "Please upgrade your version of catalog_preview (>2.1.0) and regenerate the overview" if overview['top_ten']
-      overview['all_nodes'][0..9].each do |node|
+      if overview['top_ten']
+        top_ten = overview['top_ten']
+      else
+        top_ten = overview['all_nodes'][0..9]
+      end
+      top_ten.each do |node|
         #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
         li do
@@ -410,32 +444,10 @@ mab.html do
       header1 "Files that caused the most failures"
       # Compliation Errors Breakdown
       ul do
-        next unless preview['compilation_errors']
-        preview['compilation_errors'].each do |error|
-          ul do
-            li "#{error['nodes'].size} nodes failed to compile: #{error['manifest']}"
-            ul do
-              div.entry do
-
-                #### Error by line breakdown
-                error['errors'].each do |e|
-                  h4.entryTitle "#{e['message']} on line #{e['line']}"
-                  # Find file path in error if we don't have a file path from preview
-                  match = /(\S*(\/\S*\.pp|\.erb))/.match(e['message'].to_s)
-                  if error['manifest'].nil? and match
-                    error['manifest'] = match[1]
-                  end
-                  if error['manifest']
-                    # Read the file off disk to find the code question
-                    read_code_off_disk('failed',error['manifest'],e['line'])
-                  end
-                  #### Example nodes
-                  node_break_down(error['nodes'])
-                end
-              end
-            end
-          end
-        end
+        compile_breakdown(preview) unless preview.nil?
+      end
+      ul do
+        compile_breakdown(baseline) unless baseline.nil?
       end
     end
     # CONFLICTS (KNOWN ISSUES)
@@ -531,8 +543,13 @@ mab.html do
       # NODES
       header1 "Node breakdown"
       ul do
-        #find_diffs('/var/opt/lib/pe-puppet/preview/').each do |catalog_diff_file|
-        overview['all_nodes'].map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }.each do |catalog_diff_file|
+        # PRE-101 changes to formating
+        if overview['top_ten']
+          diffs = find_diffs('/var/opt/lib/pe-puppet/preview/')
+        else
+          diffs = overview['all_nodes'].map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
+        end
+        diffs.each do |catalog_diff_file|
           #puts catalog_diff_file
           if File.zero?(catalog_diff_file)
             body "Diff file empty on disk: #{catalog_diff_file}"
