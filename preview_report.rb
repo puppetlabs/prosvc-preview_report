@@ -358,7 +358,8 @@ mab.html do
     br
     body "These nodes are likely the best for testing the breakdown issue list below."
     ul do
-      #overview['top_ten'].each do |node|
+      # PRE-101 Format changes removed this (beta) key , this raise will catch someone trying to generate an old report
+      raise "Please upgrade your version of catalog_preview (>2.1.0) and regenerate the overview" if overview['top_ten']
       overview['all_nodes'][0..9].each do |node|
         #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
