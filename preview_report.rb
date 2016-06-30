@@ -109,6 +109,8 @@ mab.html do
   def read_code_off_disk(header,manifest,line_number)
     line_number = (line_number.to_i + 1)
     # Read the file off disk to find the code question.
+    # Catch if the file is not on disk
+    return body "#{manifest} does not exist: no line preview available" unless File.exists?(manifest)
     file = File.readlines(manifest)
     #### Manifests Code Block
     css = [
@@ -156,7 +158,7 @@ mab.html do
                # LINK 2 or LINK 3
                li do
                  if resource.nil?
-                   a node, :href => '#%s' % node_name(node)
+                   a node, :href => '#%s' % normalize_name(node)
                  else
                    a node, :href => '#%s' % normalize_name("#{node}_#{resource}")
                  end
@@ -250,7 +252,7 @@ mab.html do
     end
   end
 
-  def compile_breakdown(section)
+  def compilation_errors_breakdown(section)
     return '' unless section['compilation_errors']
     section['compilation_errors'].each do |error|
       ul do
@@ -444,10 +446,10 @@ mab.html do
       header1 "Files that caused the most failures"
       # Compliation Errors Breakdown
       ul do
-        compile_breakdown(preview) unless preview.nil?
+        compilation_errors_breakdown(preview) unless preview.nil?
       end
       ul do
-        compile_breakdown(baseline) unless baseline.nil?
+        compilation_errors_breakdown(baseline) unless baseline.nil?
       end
     end
     # CONFLICTS (KNOWN ISSUES)
