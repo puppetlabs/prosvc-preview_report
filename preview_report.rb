@@ -72,37 +72,36 @@ baseline = overview['baseline']
 mab = Markaby::Builder.new
 mab.html do
   def make_error_readable(error)
-      h5.entryTitle "Information about this issue"
-      case error
-      # MIGRATE4_REVIEW_IN_EXPRESSION
-      when 'MIGRATE4_REVIEW_IN_EXPRESSION'
-        tag! :body, :id => "overview_#{error}_#{rand()}" do
-          <<-eos
-          In Puppet 3, the #{tag! :code, 'in'} operator was not well specified and there were several undefined behaviors. This relates to, but is not limited to:
-          eos
-        end
-        ul do
-          li 'String / numeric automatic conversions.'
-          li 'Applying regular expressions to non string values causing auto conversion.'
-          li 'Confusion over comparisons between empty string/undef/nil (internal) values.'
-          li 'In-operator not using case independent comparisons in Puppet 3.'
-        end
-        br
-        body 'To fix, review the expectations against the Puppet language specification.'
-        br
-        body "For a detailed description of this issue, see "
-        a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
-      else
-        tag! :body, :id => "overview_#{error}_#{rand()}" do
-           a :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase do
-             tag! :i, "No information defined for this error click here for more infromation"
-           end
+    h5.entryTitle "Information about this issue"
+    case error
+    # MIGRATE4_REVIEW_IN_EXPRESSION
+    when 'MIGRATE4_REVIEW_IN_EXPRESSION'
+      tag! :body, :id => "overview_#{error}_#{rand()}" do
+        <<-eos
+        In Puppet 3, the #{tag! :code, 'in'} operator was not well specified and there were several undefined behaviors. This relates to, but is not limited to:
+        eos
+      end
+      ul do
+        li 'String / numeric automatic conversions.'
+        li 'Applying regular expressions to non string values causing auto conversion.'
+        li 'Confusion over comparisons between empty string/undef/nil (internal) values.'
+        li 'In-operator not using case independent comparisons in Puppet 3.'
+      end
+      br
+      body 'To fix, review the expectations against the Puppet language specification.'
+      br
+      body "For a detailed description of this issue, see "
+      a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
+    else
+      tag! :body, :id => "overview_#{error}_#{rand()}" do
+        a :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase do
+          tag! :i, "No information defined for this error click here for more infromation"
         end
       end
+    end
   end
 
   def normalize_name(name)
-    #name.downcase.gsub(/[\-\[\] :\/\.]/,'_')
     URI.escape(name).gsub(/[\-\[\] :\/\.]/,'_').to_s
   end
 
@@ -140,7 +139,7 @@ mab.html do
                 "#{nu}:#{file[(nu - 1)]}"
                 end
               end
-             end
+            end
           end
         end
       end
@@ -153,18 +152,18 @@ mab.html do
       body "This issue occured on #{nodes.length} nodes"
       ul do
         nodes[0..10].each do |node|
-           div :style=>"font-size: 1.0rem;" do
-             tag! :font, :color => 'black' do
-               # LINK 2 or LINK 3
-               li do
-                 if resource.nil?
-                   a node, :href => '#%s' % normalize_name(node)
-                 else
-                   a node, :href => '#%s' % normalize_name("#{node}_#{resource}")
-                 end
-               end
-             end
-           end
+          div :style=>"font-size: 1.0rem;" do
+            tag! :font, :color => 'black' do
+              # LINK 2 or LINK 3
+              li do
+                if resource.nil?
+                  a node, :href => '#%s' % normalize_name(node)
+                else
+                  a node, :href => '#%s' % normalize_name("#{node}_#{resource}")
+                end
+              end
+            end
+          end
         end
       end
     end
@@ -218,35 +217,35 @@ mab.html do
 
   def pie_chart(catalog_diff)
     td do
-        graph = {
-          'baseline_resource_count'      => 'grey',
-          'preview_resource_count'       => 'black',
-          'missing_resource_count'       => 'red',
-          'added_resource_count'         => 'green',
-          'conflicting_resource_count'   => 'blue',
-        }
-        table do
-          graph.each do |key,color|
-            next if catalog_diff[key].nil?
-            next if catalog_diff[key].zero?
-            css = [
-              'color: white',
-              "background-color: #{color}",
-              'text-align: center ',
-              'position: relative',
-              "width: #{(catalog_diff[key])}px",
-              "line-height: #{(catalog_diff[key])}px",
-              'border-radius: 50%',
-              'text-align: center',
-            ]
-            td do
-              div :style => css.join(';') do
-                body catalog_diff[key]
-              end
-              div :style => 'font-size: smaller;color: black;' do
-                tag! :b, key.capitalize.gsub('_',' ')
-              end
+      graph = {
+        'baseline_resource_count'      => 'grey',
+        'preview_resource_count'       => 'black',
+        'missing_resource_count'       => 'red',
+        'added_resource_count'         => 'green',
+        'conflicting_resource_count'   => 'blue',
+      }
+      table do
+        graph.each do |key,color|
+          next if catalog_diff[key].nil?
+          next if catalog_diff[key].zero?
+          css = [
+            'color: white',
+            "background-color: #{color}",
+            'text-align: center ',
+            'position: relative',
+            "width: #{(catalog_diff[key])}px",
+            "line-height: #{(catalog_diff[key])}px",
+            'border-radius: 50%',
+            'text-align: center',
+          ]
+          td do
+            div :style => css.join(';') do
+              body catalog_diff[key]
             end
+            div :style => 'font-size: smaller;color: black;' do
+                tag! :b, key.capitalize.gsub('_',' ')
+            end
+          end
         end
       end
     end
@@ -599,22 +598,22 @@ mab.html do
                   ]
                   div :style=>css.join(';') do
                     table  do
-                        th_css = [
-                          'background: grey',
-                          'font-weight: bold',
-                        ]
-                        div :style=>th_css.join(';') do
-                          th "#{key.capitalize.gsub(/_/,' ')}:"
-                        end
-                        td_css = [
-                          'background: #FAFAFA',
-                          'text-align: center',
-                        ]
-                        div :style=>td_css.join(';') do
+                      th_css = [
+                        'background: grey',
+                        'font-weight: bold',
+                      ]
+                      div :style=>th_css.join(';') do
+                        th "#{key.capitalize.gsub(/_/,' ')}:"
+                      end
+                      td_css = [
+                        'background: #FAFAFA',
+                        'text-align: center',
+                      ]
+                      div :style=>td_css.join(';') do
                           td value
-                        end
                       end
                     end
+                  end
                 end
               end
               tag! :i, "Last compiled: #{catalog_diff['timestamp']} with #{catalog_diff['produced_by']}"
@@ -674,32 +673,32 @@ mab.html do
                           'width: 768',
                         ]
                         div :style=>css.join(';') do
-                           ['%s{ \'%s\':'   % [conflict['type'].downcase,conflict['title'].downcase],
-                            '- %s => %s' % [attribute['name'],attribute['baseline_value'].inspect],
-                            '+ %s => %s' % [attribute['name'],attribute['preview_value'].inspect],
-                            '}',
-                           ].each do |line|
-                           tag! :code do
-                             if line =~ /^\-.*/
-                               div :style=> "background-color:#ffecec" do
-                                 tag! :font, :color => '#bd2c00' do
-                                 "#{line}&nbsp;"
-                                 end
-                               end
-                             elsif line =~/^\+.*/
-                               div :style=> "background-color:#eaffea" do
-                                 tag! :font, :color => '#55a532' do
-                                 "#{line}&nbsp;"
-                                 end
-                               end
-                             else
-                               line
-                             end
-                           end
+                          ['%s{ \'%s\':'   % [conflict['type'].downcase,conflict['title'].downcase],
+                           '- %s => %s' % [attribute['name'],attribute['baseline_value'].inspect],
+                           '+ %s => %s' % [attribute['name'],attribute['preview_value'].inspect],
+                           '}',
+                          ].each do |line|
+                          tag! :code do
+                            if line =~ /^\-.*/
+                              div :style=> "background-color:#ffecec" do
+                                tag! :font, :color => '#bd2c00' do
+                                "#{line}&nbsp;"
+                                end
+                              end
+                            elsif line =~/^\+.*/
+                              div :style=> "background-color:#eaffea" do
+                                tag! :font, :color => '#55a532' do
+                                "#{line}&nbsp;"
+                                end
+                              end
+                            else
+                              line
+                            end
                           end
                         end
                       end
                     end
+                  end
                 end
               end
             end
