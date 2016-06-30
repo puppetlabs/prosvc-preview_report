@@ -419,6 +419,8 @@ mab.html do
                 if issue['file'].nil? and match
                   issue['file'] = match[1]
                 end
+                # Catch errors without a file and set the Error as the file
+                issue['file'] = issue['message'] if issue['file'].nil?
                 # Work around the fact overview doesn't have human readable messages
                 # we store them here and then use them in the breakdown below
                 error_message[issue['issue_code']] = issue['message']
@@ -488,11 +490,11 @@ mab.html do
               end
               li do
                 a :name => normalize_name(manifest) do
-                   css = [
-                     'color: black',
-                     'text-decoration: none',
-                     'font-size: 1.2rem',
-                   ]
+                  css = [
+                    'color: black',
+                    'text-decoration: none',
+                    'font-size: 1.2rem',
+                  ]
                   div :style=>css.join(';') do
                     tag! :b, manifest
                   end
