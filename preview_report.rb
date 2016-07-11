@@ -94,8 +94,8 @@ mab.html do
       a 'PUP-4130', :href => 'https://tickets.puppetlabs.com/browse/PUP-4130'
     else
       tag! :body, :id => "overview_#{error}_#{rand()}" do
-        a :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase do
-          tag! :i, "No information defined for this error click here for more infromation"
+        a :href => "https://forge.puppet.com/puppetlabs/catalog_preview#%s" % error.downcase , :class => 'tooltip', :title => error do
+          tag! :i, "No information defined for this error click here for more information"
         end
       end
     end
@@ -280,6 +280,28 @@ mab.html do
     end
   end
 
+  def process_issues(preview_log)
+    ul do
+      preview_log.each do |issue|
+        li do
+          # Find file path in error if we don't have a file path from preview
+          match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
+          if issue['file'].nil? and match
+            issue['file'] = match[1]
+          end
+          # Catch errors without a file and set the Error as the file
+          issue['file'] = issue['message'] if issue['file'].nil?
+          # Work around the fact overview doesn't have human readable messages
+          # we store them here and then use them in the breakdown below
+          @error_message[issue['issue_code']] = issue['message']
+          a :href => "#%s" % normalize_name(issue['file']), :class => 'tooltip', :title => issue['issue_code'] do
+            "#{tag! :b,issue['level'].capitalize}: #{issue['file']}:#{issue['line']}"
+          end
+        end
+      end
+    end
+  end
+
   def header1(title)
     css = [
       'color: #33353f',
@@ -342,6 +364,33 @@ mab.html do
       style :type => "text/css" do
         %[
           body { font: 20px/120% "Helvetica Neue",Helvetica,Arial, sans-serif }
+          .tooltip{
+              display: inline;
+              position: relative;
+          }
+          .tooltip:hover:after{
+              background: #333;
+              background: rgba(0,0,0,.8);
+              border-radius: 5px;
+              bottom: 26px;
+              color: #fff;
+              content: attr(title);
+              left: 20%;
+              padding: 5px 15px;
+              position: absolute;
+              z-index: 98;
+              width: 320px;
+          }
+          .tooltip:hover:before{
+              border: solid;
+              border-color: #333 transparent;
+              border-width: 6px 6px 0 6px;
+              bottom: 20px;
+              content: "";
+              left: 50%;
+              position: absolute;
+              z-index: 99;
+          }
         ]
       end
   end
@@ -367,7 +416,7 @@ mab.html do
     div :style=>css.join(';') do
        img :src => PUPPET_LOGO
     end
-    error_message = Hash.new
+    @error_message = Hash.new
     # TOC
     header1 "Catalog Preview Report"
     ul do
@@ -396,38 +445,27 @@ mab.html do
         top_ten = overview['all_nodes'][0..9]
       end
       top_ten.each do |node|
-        #puts node
         preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
+        # PRE-103 Compatibility with old format
+        issue_count = (node['error_count'] + node['warning_count']) || node['issue_count'] 
         li do
-          a :href => '#%s' % normalize_name(node['name']) do
+          a :href => '#%s' % normalize_name(node['name']), :title => "#{node['error_count']} Errors and #{node['warning_count']} Warnings", :class => 'tooltip' do
             css = [
               'color: black',
               'text-decoration: none',
               'font-size: 1.2rem',
             ]
             div :style=>css.join(';') do
-              "#{tag! :b,node['issue_count']} issues on #{tag! :b, node['name']}"
+              "#{tag! :b,issue_count} issues on #{tag! :b, node['name']}"
             end
           end
         end
         unless preview_log.empty?
-          ul do
-            preview_log.each do |issue|
-              li do
-                # Find file path in error if we don't have a file path from preview
-                match = /(\S*(\/\S*\.pp|\.erb))/.match(issue['message'].to_s)
-                if issue['file'].nil? and match
-                  issue['file'] = match[1]
-                end
-                # Catch errors without a file and set the Error as the file
-                issue['file'] = issue['message'] if issue['file'].nil?
-                # Work around the fact overview doesn't have human readable messages
-                # we store them here and then use them in the breakdown below
-                error_message[issue['issue_code']] = issue['message']
-                a "#{issue['file']}:#{issue['line']}", :href => "#%s" % normalize_name(issue['file'])
-              end
-            end
-          end
+          errors   = preview_log.select{ |h| h['level'] == 'error' }
+          process_issues(errors) unless errors.empty?
+
+          warnings = preview_log.select{ |h| h['level'] == 'warning' }
+          process_issues(warnings) unless warnings.empty?
         end
       end
     end
@@ -510,7 +548,7 @@ mab.html do
                      'color: #666',
                     ]
                     div :style=>css.join(';') do
-                      "Line #{line_number}: #{error_message[issue['issue_code']] || issue['issue_code']}"
+                      "Line #{line_number}: #{@error_message[issue['issue_code']] || issue['issue_code']}"
                     end
                   end
 
@@ -550,7 +588,10 @@ mab.html do
         if overview['top_ten']
           diffs = find_diffs('/var/opt/lib/pe-puppet/preview/')
         else
-          diffs = overview['all_nodes'].map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
+           # PRE-103 As the top ten list is sorted by issues, sort the node breakdown by catalog changes
+           # This is actually the default if the nodes have no issues, but if all nodes have at least
+           # 1 known issue, then this sorting is skewed in favor of that, thus we always sort explicitly
+          diffs = overview['all_nodes'].sort_by{ |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
         end
         diffs.each do |catalog_diff_file|
           #puts catalog_diff_file
