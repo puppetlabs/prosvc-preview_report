@@ -267,13 +267,58 @@ mab.html do
               if error['manifest'].nil? and match
                 error['manifest'] = match[1]
               end
+              # Extract line number from error message when manifest is null
+              if e['line'].nil? and match
+                line_number = match[3]
+              else
+                line_number = e['line']
+              end
               if error['manifest']
                 # Read the file off disk to find the code question
-                read_code_off_disk('failed',error['manifest'],e['line'])
+                read_code_off_disk('failed',error['manifest'],line_number)
               end
               #### Example nodes
               node_break_down(error['nodes'])
             end
+          end
+        end
+      end
+    end
+  end
+
+  def compilation_errors_baseline_breakdown(section)
+    return '' unless section['compilation_errors']
+    section['compilation_errors'].each do |error|
+      ul do
+        # Matching the message to the node by index here as they are positionally related.
+          div.entry do
+            #### Error by line breakdown
+            error['errors'].each_with_index do |e,index|
+            li do  
+              "#{tag! :b, error['nodes'][index]} failed to compile the baseline catalog"
+            end
+            ul do
+                li do
+                  h4.entryTitle "#{e['message']} on line #{e['line']}"
+                  # Find file path in error if we don't have a file path from preview
+                  match = /(\S*(\/\S*\.pp|\.erb)):?([0-9]+)/.match(e['message'].to_s)
+                  if error['manifest'].nil? and match
+                    error['manifest'] = match[1]
+                  end
+                  # Extract line number from error message when manifest is null
+                  if e['line'].nil? and match
+                    line_number = match[3]
+                  else
+                    line_number = e['line']
+                  end
+                  if error['manifest']
+                    # Read the file off disk to find the code question
+                    read_code_off_disk('failed',error['manifest'],line_number)
+                  end
+                  #### Example nodes
+                  node_break_down(Array[error['nodes'][index]])
+                end
+              end
           end
         end
       end
@@ -472,23 +517,30 @@ mab.html do
     total_failures = stats['failures']['total'] || 0
 
     # FAILURES
-    unless total_failures == 0 
+    unless total_failures == 0 and baseline['compilation_errors'].nil?
       header1 "Catalog Compliation Failures"
       div.failure_overview! {
         # 0 out X summary
+        # Top level failures key does not show baseline failure or percentage
+        failures = baseline['compilation_errors'].map{|h| h['nodes']}.flatten.size if total_failures == 0
+        percent  = stats['failures']['percent'] || (failures.to_f / stats['node_count'].to_f) * 100.0 
         <<-eos
-        #{tag! :strong,total_failures} out of #{stats['node_count']} nodes failed to compile their catalog.
-        This is #{tag! :strong, stats['failures']['percent']}% failure rate across your infrastructure
+        #{tag! :strong,failures} out of #{stats['node_count']} nodes failed to compile their catalog.
+        This is #{tag! :strong, percent.round(2)}% failure rate across your infrastructure
         eos
       }
-      # FILE WITH ISSUES 
-      header1 "Files that caused the most failures"
       # Compliation Errors Breakdown
-      ul do
-        compilation_errors_breakdown(preview) unless preview.nil?
+      unless baseline.nil?
+        header1 "Baseline compilation failures"
+        ul do
+          compilation_errors_baseline_breakdown(baseline)
+        end
       end
-      ul do
-        compilation_errors_breakdown(baseline) unless baseline.nil?
+      unless preview.nil?
+        header1 "Preview compilation failures"
+        ul do
+          compilation_errors_breakdown(preview)
+        end
       end
     end
     # CONFLICTS (KNOWN ISSUES)
