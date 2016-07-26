@@ -517,7 +517,7 @@ mab.html do
     total_failures = stats['failures']['total'] || 0
 
     # FAILURES
-    unless total_failures == 0 and baseline['compilation_errors'].nil?
+    unless total_failures == 0 and baseline.nil? || baseline['compilation_errors'].nil?
       header1 "Catalog Compliation Failures"
       div.failure_overview! {
         # 0 out X summary
