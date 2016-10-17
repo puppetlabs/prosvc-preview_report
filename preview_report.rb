@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/opt/puppet/bin/ruby
 require 'markaby'
 require 'json'
 require 'uri'
