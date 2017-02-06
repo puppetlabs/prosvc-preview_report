@@ -13,6 +13,7 @@ opts = GetoptLong.new(
   [ '--format_json',   '-f', GetoptLong::REQUIRED_ARGUMENT],
   [ '--write_html',    '-w', GetoptLong::REQUIRED_ARGUMENT],
   [ '--pie_chart',     '-p', GetoptLong::NO_ARGUMENT ],
+  [ '--preview_outputdir',     '-o', GetoptLong::OPTIONAL_ARGUMENT ],
   [ '--help',          '-h', GetoptLong::NO_ARGUMENT ],
 )
 
@@ -28,6 +29,8 @@ preview_report.rb [OPTIONS]
   The path to where you would like to save the html report 
 -p, --pie_chart
   Enable the "pie" charts for resource counts || defaults to off
+-o, --preview_outputdir
+  The path to where you set --preview_outputdir when running puppet preview.  Defaults to /var/opt/lib/pe-puppet/preview/
   EOF
   exit 1
 end
@@ -43,6 +46,8 @@ opts.each do |opt,arg|
     @html_file = arg
   when '--pie_chart'
     @pie_chart = true
+  when '--preview_outputdir'
+    @preview_outputdir = arg
   end
 end
 
@@ -64,6 +69,7 @@ def find_diffs(diff_path)
   found_diffs
 end
 
+preview_outputdir = @preview_outputdir || '/var/opt/lib/pe-puppet/preview/'
 overview = load_json(@overview_json)
 stats    = overview['stats']
 preview  = overview['preview']
@@ -490,7 +496,7 @@ mab.html do
         top_ten = overview['all_nodes'][0..9]
       end
       top_ten.each do |node|
-        preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
+        preview_log = load_json("#{preview_outputdir}/#{node['name']}/preview_log.json")
         # PRE-103 Compatibility with old format
         issue_count = (node['error_count'] + node['warning_count']) || node['issue_count'] 
         li do
@@ -638,12 +644,12 @@ mab.html do
       ul do
         # PRE-101 changes to formating
         if overview['top_ten']
-          diffs = find_diffs('/var/opt/lib/pe-puppet/preview/')
+          diffs = find_diffs(preview_outputdir)
         else
            # PRE-103 As the top ten list is sorted by issues, sort the node breakdown by catalog changes
            # This is actually the default if the nodes have no issues, but if all nodes have at least
            # 1 known issue, then this sorting is skewed in favor of that, thus we always sort explicitly
-          diffs = overview['all_nodes'].sort_by{ |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map{ |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
+          diffs = overview['all_nodes'].sort_by{ |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map{ |node| "#{preview_outputdir}/#{node['name']}/catalog_diff.json" }
         end
         diffs.each do |catalog_diff_file|
           #puts catalog_diff_file
