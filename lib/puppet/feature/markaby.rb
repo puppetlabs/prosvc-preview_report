@@ -1,3 +1,3 @@
 require 'puppet/util/feature'
 
-Puppet.features.add(:markaby, :libs => ['markaby'])
+Puppet.features.add(:markaby, libs: ['markaby'])
