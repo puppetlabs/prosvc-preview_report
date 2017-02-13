@@ -506,8 +506,7 @@ mab.html do
       header1 'Catalog Compliation Failures'
       div.failure_overview! do
         # 0 out X summary
-        # Top level failures key does not show baseline failure or percentage
-        failures = baseline['compilation_errors'].map { |h| h['nodes'] }.flatten.size if total_failures.zero?
+        failures = stats['failures']['total']
         percent  = stats['failures']['percent'] || (failures.to_f / stats['node_count'].to_f) * 100.0
         <<-eos
         #{tag! :strong, failures} out of #{stats['node_count']} nodes failed to compile their catalog.
