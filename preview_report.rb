@@ -631,11 +631,8 @@ mab.html do
                   overview['all_nodes'].sort_by { |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map { |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
                 end
         diffs.each do |catalog_diff_file|
-          # puts catalog_diff_file
-          if File.zero?(catalog_diff_file)
-            body "Diff file empty on disk: #{catalog_diff_file}"
-            next
-          end
+          next if File.zero?(catalog_diff_file)
+
           catalog_diff = load_json(catalog_diff_file)
           li do
             h3 do
