@@ -1,4 +1,4 @@
-#!/opt/puppet/bin/ruby
+#!/opt/puppetlabs/puppet/bin/ruby
 require 'markaby'
 require 'json'
 require 'uri'
@@ -502,7 +502,7 @@ mab.html do
     total_failures = stats['failures']['total'] || 0
 
     # FAILURES
-    unless total_failures.zero? && baseline.nil? || baseline['compilation_errors'].nil?
+    unless total_failures.zero? && baseline.nil? || baseline.nil? || baseline['compilation_errors'].nil?
       header1 'Catalog Compliation Failures'
       div.failure_overview! do
         # 0 out X summary
