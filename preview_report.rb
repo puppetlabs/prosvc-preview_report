@@ -57,6 +57,14 @@ def find_diffs(diff_path)
   found_diffs
 end
 
+preview_output_dir ||= if Dir.exist?('/opt/puppetlabs/puppet')
+                        # PE 2015.x and newer.
+                        '/opt/puppetlabs/puppet/cache/preview'
+                       else
+                         # PE 3.x.
+                         '/var/opt/lib/pe-puppet/preview'
+                       end
+
 overview = load_json(@overview_json)
 stats    = overview['stats']
 preview  = overview['preview']
@@ -476,7 +484,7 @@ mab.html do
                   overview['all_nodes'][0..9]
                 end
       top_ten.each do |node|
-        preview_log = load_json("/var/opt/lib/pe-puppet/preview/#{node['name']}/preview_log.json")
+        preview_log = load_json("#{preview_output_dir}/#{node['name']}/preview_log.json")
         # PRE-103 Compatibility with old format
         issue_count = (node['error_count'] + node['warning_count']) || node['issue_count']
         li do
@@ -622,12 +630,12 @@ mab.html do
       ul do
         # PRE-101 changes to formating
         diffs = if overview['top_ten']
-                  find_diffs('/var/opt/lib/pe-puppet/preview/')
+                  find_diffs(preview_output_dir)
                 else
                   # PRE-103 As the top ten list is sorted by issues, sort the node breakdown by catalog changes
                   # This is actually the default if the nodes have no issues, but if all nodes have at least
                   # 1 known issue, then this sorting is skewed in favor of that, thus we always sort explicitly
-                  overview['all_nodes'].sort_by { |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map { |node| "/var/opt/lib/pe-puppet/preview/#{node['name']}/catalog_diff.json" }
+                  overview['all_nodes'].sort_by { |h| h['added_resource_count'] + h['missing_resource_count'] + h['conflicting_resource_count'] }.map { |node| "#{preview_output_dir}/#{node['name']}/catalog_diff.json" }
                 end
         diffs.each do |catalog_diff_file|
           next if File.zero?(catalog_diff_file)
