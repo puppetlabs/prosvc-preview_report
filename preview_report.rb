@@ -558,49 +558,51 @@ mab.html do
         This is #{tag! :strong, stats['conflicting']['percent']}% conflict rate across your infrastructure
         eos
       end
-      preview['warning_count_by_issue_code'].each do |issue|
-        css = [
-          'color: black',
-          'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";'
-        ]
-        div style: css.join(';') do
-          ul do
-            issue['manifests'].each do |manifest, lines|
-              if lines.empty?
-                body ''
-                next
-              end
-              li do
-                a name: normalize_name(manifest) do
-                  css = [
-                    'color: black',
-                    'text-decoration: none',
-                    'font-size: 1.2rem'
-                  ]
-                  div style: css.join(';') do
-                    tag! :b, manifest
-                  end
+      if(!preview.nil?)
+        preview['warning_count_by_issue_code'].each do |issue|
+          css = [
+            'color: black',
+            'font-family: "Helvetica Neue",Helvetica,Arial,sans-serif";'
+          ]
+          div style: css.join(';') do
+            ul do
+              issue['manifests'].each do |manifest, lines|
+                if lines.empty?
+                  body ''
+                  next
                 end
-              end
-              ul do
-                #### Error by line breakdown
-                lines.uniq.each do |linepos|
-                  line_number = linepos.split(':')[0]
-                  # Use the preview message human readable and fallback to issue code when not present
-                  h4.entryTitle do
+                li do
+                  a name: normalize_name(manifest) do
                     css = [
-                      'color: #666'
+                      'color: black',
+                      'text-decoration: none',
+                      'font-size: 1.2rem'
                     ]
                     div style: css.join(';') do
-                      "Line #{line_number}: #{@error_message[issue['issue_code']] || issue['issue_code']}"
+                      tag! :b, manifest
                     end
                   end
+                end
+                ul do
+                  #### Error by line breakdown
+                  lines.uniq.each do |linepos|
+                    line_number = linepos.split(':')[0]
+                    # Use the preview message human readable and fallback to issue code when not present
+                    h4.entryTitle do
+                      css = [
+                        'color: #666'
+                      ]
+                      div style: css.join(';') do
+                        "Line #{line_number}: #{@error_message[issue['issue_code']] || issue['issue_code']}"
+                      end
+                    end
 
-                  read_code_off_disk('warning', manifest, line_number)
+                    read_code_off_disk('warning', manifest, line_number)
 
-                  br
-                  # Show human reable error or link
-                  make_error_readable(issue['issue_code'])
+                    br
+                    # Show human reable error or link
+                    make_error_readable(issue['issue_code'])
+                  end
                 end
               end
             end
